@@ -2,19 +2,18 @@
      style="margin-top: 25%">
   <div class="card">
     <div class="card-body">
-      <p class="card-text" style="font-size: 35px">{{text}}</p>
+      <app-textarea [_text]="text"></app-textarea>
 
 
       <div class="input-group mb-3">
-        <input type="text" class="form-control"
+        <input type="text" class="form-control" [ngClass]="inputClass"
                placeholder="{{ gameStarted ? '' : 'Start typing to begin'}}"
                [attr.disabled]="gameEnded ? '' : null"
                [(ngModel)]="input"
                (keyup)="processInput()"
-               (input)="startGame()"
         >
         <div class="input-group-append">
-          <span *ngIf="!gameEnded" class="input-group-text" id="basic-addon2">{{counter|countdown}}</span>
+          <app-timer *ngIf="gameStarted" (gameEnded)="endGame($event)"></app-timer>
           <span *ngIf="gameEnded" class="btn btn-danger" id="basic-addon2" (click)="restart()">Restart</span>
         </div>
       </div>

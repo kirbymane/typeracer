@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {TextGeneratorService} from '../_services/text-generator.service';
 import {Subscription, timer} from 'rxjs';
+import {TextParserService} from '../_services/text-parser.service';
 
 @Component({
   selector: 'app-game-window',
@@ -8,19 +9,14 @@ import {Subscription, timer} from 'rxjs';
   styleUrls: ['./game-window.component.css']
 })
 export class GameWindowComponent implements OnInit {
-  set gameEnded(value: boolean) {
-    this._gameEnded = value;
-  }
   private _text: string;
   private _textArr: Array<string>;
   private _input: string;
   private _gameStarted: boolean;
   private _gameEnded: boolean;
-  private countDown: Subscription;
-  private _counter = 60;
   private wordCount: number;
-  private result: string;
-  private tick = 1000;
+  private result: number;
+  private _inputClass: string;
 
   constructor(
     private textGenerator: TextGeneratorService
@@ -32,62 +28,73 @@ export class GameWindowComponent implements OnInit {
     this.getRandomText();
   }
 
-  startTimer() {
-    this.countDown = timer(0, this.tick)
-      .subscribe(() => {
-        if (this._counter === 0) {
-          this._gameEnded = true;
-          this.result = this.wordCount + '';
-        } else {
-          --this._counter;
-        }
-    });
-  }
-
-  startGame() {
+  startGame(): void {
     if (!this._gameStarted) {
       this._gameStarted = true;
-      this.startTimer();
     }
+  }
+
+  endGame(gameEnded): void {
+    this.gameEnded = gameEnded;
+    this.gameStarted = false;
+    this.result = this.wordCount;
+    this.inputClass = '';
   }
 
   public getRandomText(): void {
     this.textGenerator.getRandomText(200)
       .subscribe(response => {
-        this._text = response.text_out.replace(/<[^>]+>/g, '');
+        this._text = TextParserService.parseText(response.text_out);
         this._textArr = this.text.split(' ');
-        this._text = this._textArr.slice(0, 24).join(' ').concat('..');
+        this._text = TextParserService.minimiseText(this.textArr);
       });
   }
 
   public processInput(): void {
-    if (this._textArr[0] && !this.gameEnded) {
-      if (this._textArr[0] + ' ' === this.input) {
-        this._textArr.shift();
-        this.text = this._textArr.slice(0, 24).join(' ').concat('..');
+    if (this.textArr[0] && !this.gameEnded) {
+      if (!this.gameStarted) {
+        this.gameStarted = true;
+      }
+
+      if (this.textArr[0] + ' ' === this.input) {
+        this.textArr.shift();
+        this.text = this.textArr.slice(0, 24).join(' ').concat('..');
         this.input = '';
         this.wordCount++;
+      } else {
+        for (let i = 0; i < this.input.split('').length; i++) {
+          if (this.textArr[0].split('')[i] !== this.input.split('')[i]) {
+            this.inputClass = 'bg-danger';
+          } else {
+            this.inputClass = '';
+          }
+        }
       }
     }
   }
 
   public restart(): void {
-    this.countDown.unsubscribe();
     this.getRandomText();
-    this.gameEnded = false;
-    this.gameStarted = false;
     this.wordCount = 0;
-    this.counter = 60;
     this.input = '';
+    this.gameEnded = false;
   }
 
 
-  set counter(value: number) {
-    this._counter = value;
+  get gameEnded(): boolean {
+    return this._gameEnded;
+  }
+
+  set gameEnded(value: boolean) {
+    this._gameEnded = value;
   }
 
   set gameStarted(value: boolean) {
     this._gameStarted = value;
+  }
+
+  get gameStarted(): boolean {
+    return this._gameStarted;
   }
 
   set text(value: string) {
@@ -108,16 +115,20 @@ export class GameWindowComponent implements OnInit {
   }
 
 
-  get counter(): number {
-    return this._counter;
+  get textArr(): Array<string> {
+    return this._textArr;
+  }
+
+  set textArr(value: Array<string>) {
+    this._textArr = value;
   }
 
 
-  get gameStarted(): boolean {
-    return this._gameStarted;
+  get inputClass(): string {
+    return this._inputClass;
   }
 
-  get gameEnded(): boolean {
-    return this._gameEnded;
+  set inputClass(value: string) {
+    this._inputClass = value;
   }
 }
